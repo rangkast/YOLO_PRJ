@@ -85,4 +85,4 @@ if __name__ == "__main__":
     model = YOLO('yolov8s.pt')
 
     # 학습 시작 여기 성능을 늘리면 뻗음 ㅠㅠ
-    model.train(data=f"{output_dir}/data.yaml", epochs=100, batch=2, imgsz=640)
+    model.train(data=f"{output_dir}/data.yaml", epochs=100, batch=4, imgsz=640)
