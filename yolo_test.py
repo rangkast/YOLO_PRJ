@@ -15,7 +15,7 @@ def load_and_predict(image_dir, model_path):
         image = cv2.imread(image_file)  # RGB 이미지로 읽기
 
         # 디텍션 수행
-        results = model.predict(image, imgsz=320)
+        results = model.predict(image, imgsz=640)
 
         # 결과 이미지 그리기
         for result in results:

@@ -40,7 +40,7 @@ def prepare_dataset(image_dir, label_dir, output_dir):
     image_files = sorted(glob.glob(f"{image_dir}/*.jpg"))  # 모든 이미지 사용
     for img_path in image_files:
         img = cv2.imread(img_path)  # RGB 이미지로 읽기
-        img_resized = cv2.resize(img, (320, 320))
+        img_resized = cv2.resize(img, (640, 640))
         img_output_path = os.path.join(img_output_dir, os.path.basename(img_path))
         cv2.imwrite(img_output_path, img_resized)
 
@@ -85,4 +85,4 @@ if __name__ == "__main__":
     model = YOLO('yolov8s.pt')
 
     # 학습 시작 여기 성능을 늘리면 뻗음 ㅠㅠ
-    model.train(data=f"{output_dir}/data.yaml", epochs=10, batch=1, imgsz=320)
+    model.train(data=f"{output_dir}/data.yaml", epochs=100, batch=2, imgsz=640)
