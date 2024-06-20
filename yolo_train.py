@@ -148,4 +148,4 @@ if __name__ == "__main__":
         print("Using CPU")
     
     model = YOLO('yolov8s.pt')
-    model.train(data=f"{output_dir}/data.yaml", epochs=10, batch=2, imgsz=640)
+    model.train(data=f"{output_dir}/data.yaml", epochs=50, batch=4, imgsz=640)
