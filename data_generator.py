@@ -200,10 +200,10 @@ def view_images_with_algo(image_dir, algorithm, label_file, ref_images):
                 unmatched_squares.append((sq, digit1 or digit2))
 
         # 후보를 빨간색으로 표시
-        # for sq, digit in unmatched_squares:
-        #     x, y, w, h = cv2.boundingRect(np.array(sq))
-        #     cv2.rectangle(draw_frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        #     cv2.putText(draw_frame, str(digit), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+        for sq, digit in unmatched_squares:
+            x, y, w, h = cv2.boundingRect(np.array(sq))
+            cv2.rectangle(draw_frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(draw_frame, str(digit), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
         # 기존 라벨 표시
         draw_existing_labels(draw_frame, label_file, image_file)
