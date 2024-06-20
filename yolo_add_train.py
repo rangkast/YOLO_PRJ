@@ -64,9 +64,10 @@ def prepare_dataset(image_dir, label_dir, output_dir):
         img = cv2.imread(img_path)
         original_height, original_width = img.shape[:2]
 
-        # 원본 이미지를 저장
+        # 원본 이미지를 640으로 리사이즈하여 저장
+        img_resized = cv2.resize(img, (640, 640))
         img_output_path = os.path.join(img_output_dir, os.path.basename(img_path))
-        cv2.imwrite(img_output_path, img)
+        cv2.imwrite(img_output_path, img_resized)
 
         lbl_path = os.path.splitext(os.path.basename(img_path))[0] + '.txt'
         src_lbl_path = os.path.join(label_dir, lbl_path)
