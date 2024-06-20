@@ -38,7 +38,7 @@ def load_and_predict(image_dir, model_path):
 
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    image_dir = f"{script_dir}/images"
-    model_path = f"{script_dir}/runs/detect/train/weights/best.pt"
+    image_dir = f"{script_dir}/images_01"
+    model_path = f"{script_dir}/runs/detect/train10/weights/best.pt"
 
     load_and_predict(image_dir, model_path)
