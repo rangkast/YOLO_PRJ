@@ -8,23 +8,25 @@ import torch
 
 def image_pyramid(image, scale=1.5, min_size=(30, 30)):
     yield image
-    while True:
+    count = 0
+    while count < 2:  # 두 번만 스케일을 조정합니다.
         width = int(image.shape[1] / scale)
         height = int(image.shape[0] / scale)
         if width < min_size[0] or height < min_size[1]:
             break
         image = cv2.resize(image, (width, height))
         yield image
+        count += 1
 
 def adjust_bboxes(bboxes, scale):
     adjusted_bboxes = []
     for bbox in bboxes:
-        x_center, y_center, width, height, label = bbox
+        label, x_center, y_center, width, height = bbox
         x_center /= scale
         y_center /= scale
         width /= scale
         height /= scale
-        adjusted_bboxes.append((x_center, y_center, width, height, label))
+        adjusted_bboxes.append((label, x_center, y_center, width, height))
     return adjusted_bboxes
 
 def convert_to_yolo_format(label_file, output_dir, img_width, img_height):
@@ -75,7 +77,7 @@ def prepare_dataset(image_dir, label_dir, output_dir):
 
             if os.path.exists(src_lbl_path):
                 with open(src_lbl_path, 'r') as f:
-                    bboxes = [list(map(float, line.strip().split())) + [line.strip().split()[0]] for line in f]
+                    bboxes = [list(map(float, line.strip().split())) for line in f]
                 adjusted_bboxes = adjust_bboxes(bboxes, scale_factor)
 
                 with open(dst_lbl_path, 'w') as f:
@@ -115,4 +117,32 @@ if __name__ == "__main__":
         print("Using CPU")
     
     model = YOLO('yolov8s.pt')
-    model.train(data=f"{output_dir}/data.yaml", epochs=100, batch=4, imgsz=640)
+    model.train(data=f"{output_dir}/data.yaml", epochs=50, batch=2, imgsz=640)
+
+
+
+
+'''
+50 epochs completed in 0.237 hours.
+Optimizer stripped from runs/detect/train5/weights/last.pt, 22.5MB
+Optimizer stripped from runs/detect/train5/weights/best.pt, 22.5MB
+
+Validating runs/detect/train5/weights/best.pt...
+Ultralytics YOLOv8.2.32 🚀 Python-3.8.10 torch-2.3.1+cu121 CUDA:0 (NVIDIA GeForce RTX 3090, 24259MiB)
+Model summary (fused): 168 layers, 11129454 parameters, 0 gradients, 28.5 GFLOPs
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100%|██████████| 162/162 [00:02<00:00, 56.12it/s]
+                   all        645       6453      0.981      0.333       0.44      0.361
+                     0        645        645      0.942      0.333      0.418      0.356
+                     1        645        648      0.988      0.332      0.447      0.361
+                     2        645        645      0.989      0.333       0.45      0.356
+                     3        645        645      0.981      0.333      0.471      0.367
+                     4        645        645      0.983      0.333      0.398      0.343
+                     5        645        645      0.979      0.333      0.422      0.354
+                     6        645        645      0.976      0.332       0.42      0.352
+                     7        645        645      0.994      0.333       0.44       0.36
+                     8        645        645      0.988      0.333      0.447      0.371
+                     9        645        645      0.995      0.333      0.485      0.389
+Speed: 0.1ms preprocess, 1.7ms inference, 0.0ms loss, 0.6ms postprocess per image
+Results saved to runs/detect/train5
+
+'''

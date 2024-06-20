@@ -3,3 +3,4 @@ yolo_dataset/**
 *.xml
 *.csv
 *.yaml
+*.jpg
