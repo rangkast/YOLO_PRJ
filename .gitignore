@@ -1,4 +1,6 @@
 yolo_dataset/**
+yolo_dataset_01/**
+yolo_dataset_merged/**
 *.png
 *.xml
 *.csv
