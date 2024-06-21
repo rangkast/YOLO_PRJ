@@ -9,7 +9,7 @@ import torch
 def image_pyramid(image, scale=1.5, min_size=(30, 30)):
     yield image
     count = 0
-    while count < 2:  # 두 번만 스케일을 조정합니다.
+    while count < 1:  # 두 번만 스케일을 조정합니다.
         width = int(image.shape[1] / scale)
         height = int(image.shape[0] / scale)
         if width < min_size[0] or height < min_size[1]:
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     model = YOLO('yolov8s.pt')
 
     # 기존 모델 로드
-    model.load(f"{script_dir}/runs/detect/train5/weights/best.pt")
+    model.load(f"{script_dir}/runs/detect/train9/weights/best.pt")
 
     # 추가 데이터로 보강 학습
     model.train(data=f"{merged_output_dir}/data.yaml", epochs=50, batch=4, imgsz=640)
