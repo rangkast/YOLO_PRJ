@@ -159,7 +159,7 @@ def manual_label(image):
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
     image_dir = f"{script_dir}/images_01"
-    model_path = f"{script_dir}/runs/detect/train9/weights/best.pt"
+    model_path = f"{script_dir}/runs/detect/train13/weights/best.pt"
     label_file = f"{script_dir}/labels.json"
 
     load_and_predict(image_dir, model_path, label_file)

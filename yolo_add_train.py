@@ -158,4 +158,4 @@ if __name__ == "__main__":
     model.load(f"{script_dir}/runs/detect/train9/weights/best.pt")
 
     # 추가 데이터로 보강 학습
-    model.train(data=f"{merged_output_dir}/data.yaml", epochs=50, batch=4, imgsz=640)
+    model.train(data=f"{merged_output_dir}/data.yaml", epochs=100, batch=4, imgsz=640)
