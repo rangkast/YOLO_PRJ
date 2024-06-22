@@ -9,7 +9,7 @@ import torch
 def image_pyramid(image, scale=1.5, min_size=(30, 30)):
     yield image
     count = 0
-    while count < 2:  # 두 번만 스케일을 조정합니다.
+    while count < 1:  # 두 번만 스케일을 조정합니다.
         width = int(image.shape[1] / scale)
         height = int(image.shape[0] / scale)
         if width < min_size[0] or height < min_size[1]:
@@ -37,6 +37,9 @@ def convert_to_yolo_format(label_file, output_dir, img_width, img_height):
 
     for item in data['images']:
         image_path = item['file']
+        if len(item['annotations']) != 10:
+            continue
+
         base_name = os.path.splitext(os.path.basename(image_path))[0]
         label_path = os.path.join(output_dir, f"{base_name}.txt")
 
@@ -92,39 +95,51 @@ def prepare_dataset(image_dir, label_dir, output_dir, debug_dir):
         original_height, original_width = img.shape[:2]
         image_name = os.path.basename(img_path)
 
+        lbl_path = os.path.splitext(image_name)[0] + '.txt'
+        src_lbl_path = os.path.join(label_dir, lbl_path)
+
+        if not os.path.exists(src_lbl_path):
+            continue
+
+        with open(src_lbl_path, 'r') as f:
+            bboxes = [list(map(float, line.strip().split())) for line in f]
+        if len(bboxes) != 10:
+            continue
+
         # 원본 이미지를 640으로 리사이즈하여 저장
         img_resized = cv2.resize(img, (640, 640))
         img_output_path = os.path.join(img_output_dir, image_name)
         cv2.imwrite(img_output_path, img_resized)
 
-        lbl_path = os.path.splitext(image_name)[0] + '.txt'
-        src_lbl_path = os.path.join(label_dir, lbl_path)
+        dst_lbl_path = os.path.join(lbl_output_dir, os.path.basename(lbl_path))
 
+        adjusted_bboxes = adjust_bboxes_for_resized_image(bboxes, original_width, original_height, 640, 640)
 
-        '''
-            make various datasets            
-        '''
+        save_debug_image(img_resized.copy(), adjusted_bboxes, "resized", debug_dir, image_name)
 
-        # prymid algorithm
+        with open(dst_lbl_path, 'w') as f:
+            for bbox in adjusted_bboxes:
+                label, x_center, y_center, width, height = bbox
+                f.write(f"{label} {x_center} {y_center} {width} {height}\n")
+
+        # 스케일된 이미지를 저장
         for i, scaled_img in enumerate(image_pyramid(img)):
             img_resized = cv2.resize(scaled_img, (640, 640))
+            scale_factor_x = original_width / scaled_img.shape[1]
+            scale_factor_y = original_height / scaled_img.shape[0]
 
             img_output_path = os.path.join(img_output_dir, f"{os.path.splitext(image_name)[0]}_scale_{i}.jpg")
             cv2.imwrite(img_output_path, img_resized)
 
             scaled_lbl_path = os.path.join(lbl_output_dir, f"{os.path.splitext(lbl_path)[0]}_scale_{i}.txt")
-            if os.path.exists(src_lbl_path):
-                with open(src_lbl_path, 'r') as f:
-                    bboxes = [list(map(float, line.strip().split())) for line in f]
-                # 모든 스케일된 이미지를 위해 원래 스케일 팩터를 적용합니다.
-                adjusted_bboxes = adjust_bboxes_for_resized_image(bboxes, original_width, original_height, original_width, original_height)
+            adjusted_bboxes = adjust_bboxes_for_resized_image(bboxes, original_width, original_height, scaled_img.shape[1], scaled_img.shape[0])
 
-                # save_debug_image(img_resized.copy(), adjusted_bboxes, f"scaled_{i}", debug_dir, image_name)
+            save_debug_image(img_resized.copy(), adjusted_bboxes, f"scaled_{i}", debug_dir, image_name)
 
-                with open(scaled_lbl_path, 'w') as f:
-                    for bbox in adjusted_bboxes:
-                        label, x_center, y_center, width, height = bbox
-                        f.write(f"{label} {x_center} {y_center} {width} {height}\n")
+            with open(scaled_lbl_path, 'w') as f:
+                for bbox in adjusted_bboxes:
+                    label, x_center, y_center, width, height = bbox
+                    f.write(f"{label} {x_center} {y_center} {width} {height}\n")
 
 def train_with_early_stopping(model_path, data_yaml_path, epochs=100, patience=5):
     model = YOLO(model_path)
@@ -137,7 +152,7 @@ def train_with_early_stopping(model_path, data_yaml_path, epochs=100, patience=5
         results = model.train(data=data_yaml_path, epochs=1, batch=4, imgsz=640)
 
         # 학습 결과에서 손실 값을 추출합니다.
-        current_loss = results.box.loss.item()
+        current_loss = results.metrics.box_loss.item()
 
         if current_loss < best_loss:
             best_loss = current_loss
@@ -183,11 +198,12 @@ if __name__ == "__main__":
     else:
         print("Using CPU")
     
-    model_path = 'yolov8s.pt'
-
-    # # 추가 데이터로 보강 학습
-    # train_with_early_stopping(model_path, data_yaml_path, epochs=100, patience=5)
     
-    model = YOLO('yolov8s.pt')
+
     # 추가 데이터로 보강 학습
-    model.train(data=f"{output_dir}/data.yaml", epochs=100, batch=4, imgsz=640)
+    # model_path = 'yolov8s.pt'
+    # train_with_early_stopping(model_path, data_yaml_path, epochs=100, patience=5)
+
+    model = YOLO('yolov8s.pt')
+    model.load(f"{script_dir}/runs/detect/train5/weights/best.pt")
+    model.train(data=f"{output_dir}/data.yaml", epochs=50, batch=2, imgsz=640)
