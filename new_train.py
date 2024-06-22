@@ -8,6 +8,8 @@ import torch
 import cv2
 import numpy as np
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
 def adjust_contrast(image, alpha=1.5):
     new_image = cv2.convertScaleAbs(image, alpha=alpha, beta=0)
     return new_image
@@ -62,7 +64,7 @@ def convert_to_yolo_format(label_file, output_dir, img_width, img_height):
                     lf.write(f"{label} {x_center} {y_center} {width} {height}\n")
     return labeling_ten
 
-def prepare_dataset(image_dir, label_dir, output_dir, labeling, contrast=True, color=True, noise=True, blur=True, sharpen=False):
+def prepare_dataset(image_dir, label_dir, output_dir, labeling, contrast=True, color=True, noise=False, blur=False, sharpen=False):
     img_output_dir = os.path.join(output_dir, 'images')
     lbl_output_dir = os.path.join(output_dir, 'labels')
     os.makedirs(img_output_dir, exist_ok=True)
@@ -130,8 +132,27 @@ def merge_datasets(original_dir, new_dir, merged_dir):
             if os.path.abspath(file) != os.path.abspath(dst):
                 shutil.copy(file, dst)
 
+def train_yolo_model(data_yaml_path, model_path='yolov8s.pt', epochs=100, batch_size=16, learning_rate=0.001):
+    # 모델 로드
+    model = YOLO(model_path)
+
+    # 하이퍼파라미터 설정
+    model.train(
+        data=data_yaml_path,
+        epochs=epochs,
+        batch=batch_size,
+        imgsz=640,
+        lr0=learning_rate,
+        optimizer='AdamW'  # AdamW 옵티마이저 사용
+    )
+
+    # 결과 모델 저장 경로
+    result_model_dir = os.path.join(script_dir, "result_model")
+    os.makedirs(result_model_dir, exist_ok=True)
+    model_save_path = os.path.join(result_model_dir, "best.pt")
+    model.save(model_save_path)
+
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     img_width, img_height = 1920, 1080  
     
     # dataset_1   
@@ -172,7 +193,4 @@ if __name__ == "__main__":
     else:
         print("Using CPU")
     
-    model = YOLO('yolov8s.pt')
-
-    # 학습 시작
-    model.train(data=f"{merged_output_dir}/data.yaml", epochs=50, batch=4, imgsz=640)
+    train_yolo_model(f"{merged_output_dir}/data.yaml", epochs=50, batch_size=4, learning_rate=0.001)
