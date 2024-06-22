@@ -9,7 +9,7 @@ import torch
 def image_pyramid(image, scale=1.5, min_size=(30, 30)):
     yield image
     count = 0
-    while count < 1:  # 두 번만 스케일을 조정합니다.
+    while count < 0:  # 두 번만 스케일을 조정합니다.
         width = int(image.shape[1] / scale)
         height = int(image.shape[0] / scale)
         if width < min_size[0] or height < min_size[1]:
@@ -205,5 +205,5 @@ if __name__ == "__main__":
     # train_with_early_stopping(model_path, data_yaml_path, epochs=100, patience=5)
 
     model = YOLO('yolov8s.pt')
-    model.load(f"{script_dir}/runs/detect/train5/weights/best.pt")
+    # model.load(f"{script_dir}/runs/detect/train5/weights/best.pt")
     model.train(data=f"{output_dir}/data.yaml", epochs=50, batch=2, imgsz=640)
