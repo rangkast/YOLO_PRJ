@@ -57,26 +57,60 @@ def prepare_dataset(image_dir, label_dir, output_dir, labeling):
             if src_lbl_path != dst_lbl_path:
                 shutil.copy(src_lbl_path, dst_lbl_path)
 
+
+def merge_datasets(original_dir, new_dir, merged_dir):
+    for subdir in ['images', 'labels']:
+        os.makedirs(os.path.join(merged_dir, subdir), exist_ok=True)
+
+        for file in glob.glob(os.path.join(original_dir, subdir, '*')):
+            dst = os.path.join(merged_dir, subdir, os.path.basename(file))
+            if os.path.abspath(file) != os.path.abspath(dst):
+                shutil.copy(file, dst)
+
+        for file in glob.glob(os.path.join(new_dir, subdir, '*')):
+            dst = os.path.join(merged_dir, subdir, os.path.basename(file))
+            if os.path.abspath(file) != os.path.abspath(dst):
+                shutil.copy(file, dst)
+
+
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    image_dir = f"{script_dir}/images_01"
-    label_file = f"{script_dir}/labels.json"
-    output_dir = f"{script_dir}/yolo_dataset_new"
+    img_width, img_height = 1920, 1080  
+
     
-    label_dir = os.path.join(output_dir, 'labels')
-    img_width, img_height = 1920, 1080
-    labeling = convert_to_yolo_format(label_file, label_dir, img_width, img_height)
-    prepare_dataset(image_dir, label_dir, output_dir, labeling)
     
+    # dataset_1   
+    dataset_1_image_dir = f"{script_dir}/images_1"
+    dataset_1_label_file = f"{script_dir}/labels_1.json"
+    dataset_1_output_dir = f"{script_dir}/yolo_dataset_1"
+    label_dir = os.path.join(dataset_1_output_dir, 'labels')    
+    labeling = convert_to_yolo_format(dataset_1_label_file, label_dir, img_width, img_height)
+    prepare_dataset(dataset_1_image_dir, label_dir, dataset_1_output_dir, labeling)
+    
+    # dataset_2
+    dataset_2_image_dir = f"{script_dir}/images_2"    
+    dataset_2_label_file = f"{script_dir}/labels_2.json"    
+    dataset_2_output_dir = f"{script_dir}/yolo_dataset_2"
+    label_dir = os.path.join(dataset_2_output_dir, 'labels')    
+    labeling = convert_to_yolo_format(dataset_2_label_file, label_dir, img_width, img_height)
+    prepare_dataset(dataset_2_image_dir, label_dir, dataset_2_output_dir, labeling)
+      
+    
+    # 데이터셋 병합
+    merged_output_dir = f"{script_dir}/yolo_dataset_merged"    
+    merge_datasets(dataset_1_output_dir, dataset_2_output_dir, merged_output_dir)
+    
+       
     data_yaml = f"""
-    path: {output_dir}
+    path: {merged_output_dir}
     train: images
     val: images
     nc: 10
     names: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     """
     
-    with open(f"{output_dir}/data.yaml", 'w') as f:
+    with open(f"{merged_output_dir}/data.yaml", 'w') as f:
         f.write(data_yaml)
     
     torch.cuda.empty_cache()
@@ -88,4 +122,4 @@ if __name__ == "__main__":
     
     model = YOLO('yolov8s.pt')
 
-    model.train(data=f"{output_dir}/data.yaml", epochs=50, batch=4, imgsz=640)
+    model.train(data=f"{merged_output_dir}/data.yaml", epochs=50, batch=4, imgsz=640)
